@@ -1,0 +1,105 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Feb 28 13:03:01 2019
+@author: 60464
+Python:3.7
+Purpose:Read my company's SDM Software database file:*.mdf and read the content to execl file
+Version:2.0.0
+Version description:
+    In this version,adding the function of adding mdf data file to SQL automatic by program
+    In version 1.0.0, before excute the program you should adding the database file first by hand
+    
+    SQL2000 adding databse command:
+    
+    EXEC  sp_attach_db  @dbname  = '0227',     
+    @filename1  =  'F:\Python\Mdf2Excel\CSDM0227.mdf',     
+    @filename2  =  'F:\Python\Mdf2Excel\CSDM0227_log.ldf'
+    
+"""
+
+#pip install pyodbc
+import pyodbc
+#pip install openpyxl
+import openpyxl 
+
+#######################define Function
+def WriteExcel(sheet_num,tab_name):
+#just quary part ofvdata from one sheet: 
+    cursor.execute('select ItemID,StNo,CmdName,Operator,DateTime,KeepDateTime,MsgBuf,ObjectName,Status from {0}'.format(tab_name))
+##xlsx file wirte 
+#creat a new sheet and named it
+    ctrtab=wb.create_sheet(index=sheet_num, title=tab_name[4:])
+#adding lable of first line of this sheet
+    ctrtab['A1'] = 'ItemID'
+    ctrtab['B1'] = 'StNo'
+    ctrtab['C1'] = 'CmdName'
+    ctrtab['D1'] = 'Operator'
+    ctrtab['E1'] = 'DateTime'
+    ctrtab['F1'] = 'KeepDateTime'
+    ctrtab['G1'] = 'MsgBuf'
+    ctrtab['H1'] = 'ObjectName'
+    ctrtab['I1'] = 'Status'
+##wirte data
+#wirte data from second line 
+    i=2
+#define a list data
+    data=()
+    while data!=None:
+        data=cursor.fetchone()
+        #When read the last line of the database,data!=None 
+        #And go to the next while circulation, the last circulation And this time data==None
+        #And next the data will be uesd in 'ctrtab.cell(row=i, column=j, value=data[j-1])' the parameter value should not be none
+        #So error happened
+        #So this place should add one judge sentence
+        if data != None:
+            for j in range(1,10):               
+                ctrtab.cell(row=i, column=j, value=data[j-1])
+            i=i+1
+####################### xlsx file wirte  finsih
+
+
+####################### main program
+#define database name and path
+#make sure the file not be used now
+database_name="'BKCSDM0227'"
+MDF_filePath1="'F:\\Python\\Mdf2Excel\\BKCSDM0227.mdf'"
+LDF_filePath2="'F:\\Python\\Mdf2Excel\\BKCSDM0227_log.ldf'"
+
+#connect database
+cnxn=pyodbc.connect('DRIVER={0};SERVER=LP-60464;UID=sa;PWD=casco123'.format('{SQL Server}'))
+#creat cursor(游标)
+cursor=cnxn.cursor()
+
+'''
+#befort import the database file,judge if it exist in SQL (not the same database file but the same name) 
+#SQL command 'select * from master.dbo.sysdatabases' can get all the database file in SQL
+#execute SQL command
+cursor.execute('select * from master.dbo.sysdatabases')
+#get the all return data of SQL
+SQL_dataFileName=cursor.fetchall()
+#judge if the import database file exist
+#if exist rename it and if not exist do not do anything
+
+for i in range(len(SQL_dataFileName)):        
+    if  database_name[1:-2] in SQL_dataFileName[i][0]:
+        print('xxxxx')
+'''
+#execute SQL command and adding the data file MDF
+cursor.execute('EXEC sp_attach_db @dbname={0},@filename1={1},@filename2={2}'.format(database_name, MDF_filePath1, LDF_filePath2))
+
+#define tab name and sheet number in execl file
+tab_name=['dbo.IpsTab','dbo.IndTab','dbo.HdwDiTab','dbo.HdwSboTab','dbo.CtrlTab','dbo.OperateTab','dbo.CommTab','dbo.AnalyseTab']
+sheet_num=[0,1,2,3,4,5,6,7]
+
+#creat a new xlsx
+wb=openpyxl.Workbook()
+#write all the sheet of database
+for i in range(0,len(sheet_num)):
+    WriteExcel(sheet_num[i],tab_name[i])
+#save the excel file
+wb.save('{0}.xlsx'.format(database_name[1:-1]))  
+
+#close cursor and database
+cursor.close()
+cnxn.close()
+
