@@ -61,32 +61,21 @@ def WriteExcel(sheet_num,tab_name):
 ####################### main program
 #define database name and path
 #make sure the file not be used now
-database_name="'BKCSDM0227'"
-MDF_filePath1="'F:\\Python\\Mdf2Excel\\BKCSDM0227.mdf'"
-LDF_filePath2="'F:\\Python\\Mdf2Excel\\BKCSDM0227_log.ldf'"
+database_name="'CSDM0312'"
+MDF_filePath1="'F:\\Python\\Mdf2Excel\\CSDM0312.mdf'"
+LDF_filePath2="'F:\\Python\\Mdf2Excel\\CSDM0312_log.ldf'"
 
 #connect database
 cnxn=pyodbc.connect('DRIVER={0};SERVER=LP-60464;UID=sa;PWD=casco123'.format('{SQL Server}'))
-#creat cursor(游标)
+#creat cursor
 cursor=cnxn.cursor()
-
-'''
-#befort import the database file,judge if it exist in SQL (not the same database file but the same name) 
-#SQL command 'select * from master.dbo.sysdatabases' can get all the database file in SQL
-#execute SQL command
-cursor.execute('select * from master.dbo.sysdatabases')
-#get the all return data of SQL
-SQL_dataFileName=cursor.fetchall()
-#judge if the import database file exist
-#if exist rename it and if not exist do not do anything
-
-for i in range(len(SQL_dataFileName)):        
-    if  database_name[1:-2] in SQL_dataFileName[i][0]:
-        print('xxxxx')
-'''
 #execute SQL command and adding the data file MDF
 cursor.execute('EXEC sp_attach_db @dbname={0},@filename1={1},@filename2={2}'.format(database_name, MDF_filePath1, LDF_filePath2))
 
+#direct connect database file which has been added
+cnxn=pyodbc.connect('DRIVER={0};SERVER=LP-60464;DATABASE={1};UID=sa;PWD=casco123'.format('{SQL Server}',database_name[1:-1]))
+#creat cursor
+cursor=cnxn.cursor()
 #define tab name and sheet number in execl file
 tab_name=['dbo.IpsTab','dbo.IndTab','dbo.HdwDiTab','dbo.HdwSboTab','dbo.CtrlTab','dbo.OperateTab','dbo.CommTab','dbo.AnalyseTab']
 sheet_num=[0,1,2,3,4,5,6,7]
